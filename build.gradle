@@ -3,6 +3,8 @@ buildscript {
 
     repositories {
         mavenCentral()
+        jcenter()
+        maven { url "https://jitpack.io" }
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
@@ -23,6 +25,7 @@ repositories {
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    compile 'com.github.jitpack:gradle-simple:1.0'
 
     compile group: 'io.vertx', name: 'vertx-rx-java2', version: '3.5.0'
     compile 'io.vertx:vertx-mysql-postgresql-client:3.5.0'
