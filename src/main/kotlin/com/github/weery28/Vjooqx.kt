@@ -23,7 +23,7 @@ class Vjooqx(
 
     val gsonBuilder: GsonBuilder = GsonBuilder()
 
-    fun initializePostgres(client: AsyncSQLClient, config: JsonObject): Vjooqx {
+    fun initializePostgres(config: JsonObject): Vjooqx {
 
         if (sqlClient != null) {
             throw IllegalStateException("PostgresSQL client already initialized")
