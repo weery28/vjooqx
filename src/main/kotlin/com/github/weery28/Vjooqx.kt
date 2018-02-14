@@ -1,3 +1,5 @@
+package com.github.weery28
+
 import com.google.gson.GsonBuilder
 import io.reactivex.Single
 import io.vertx.core.json.JsonObject
@@ -7,10 +9,8 @@ import io.vertx.reactivex.ext.asyncsql.AsyncSQLClient
 import io.vertx.reactivex.ext.asyncsql.PostgreSQLClient
 import io.vertx.reactivex.ext.sql.SQLConnection
 import org.jooq.DSLContext
-import org.jooq.Field
 import org.jooq.Query
 import org.jooq.conf.ParamType
-import java.util.function.Function
 
 class Vjooqx(
         val vertx: Vertx
