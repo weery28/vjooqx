@@ -32,3 +32,9 @@ hs_err_pid*
 \.gradle/4\.0/taskHistory/
 
 \.gradle/buildOutputCleanup/
+
+src/main/kotlin/main/
+
+src/main/java/models/generated/
+
+local\.properties
