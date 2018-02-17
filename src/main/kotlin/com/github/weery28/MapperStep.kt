@@ -1,16 +1,15 @@
 package com.github.weery28
 
-import com.github.weery28.exceptions.FuckingException
-import com.google.gson.GsonBuilder
+import com.github.weery28.exceptions.FlatMappingException
+import com.github.weery28.json.JsonParser
 import io.reactivex.Single
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.sql.ResultSet
 import org.jooq.Field
-import java.util.*
 
 class MapperStep(
-        private val gsonBuilder: GsonBuilder,
+        private val jsonParser: JsonParser,
         private val resultSingle: Single<ResultSet>) {
 
 
@@ -19,7 +18,7 @@ class MapperStep(
         return resultSingle.flatMap {
             val jsonResult = it.rows.firstOrNull()?.encode()
             if (jsonResult != null) {
-                Single.just((gsonBuilder.create().fromJson(jsonResult, pClass)))
+                Single.just((jsonParser.encode(jsonResult, pClass)))
             } else {
                 Single.just(null)
             }
@@ -29,7 +28,7 @@ class MapperStep(
     fun <T> toListOf(pClass: Class<T>): Single<List<T>> {
         return resultSingle.map {
             it.rows.map {
-                gsonBuilder.create().fromJson(it.encode(), pClass)
+                jsonParser.encode(it.encode(), pClass)
             }
         }
     }
@@ -46,7 +45,7 @@ class MapperStep(
                     if (fieldNames.contains(key)) {
                         val value = resultJson.getValue(jsonField.key)
                         if (value != null && value != jsonField.value) {
-                            throw FuckingException("%s field contained different values".format(key))
+                            throw FlatMappingException("%s field contained different values".format(key))
                         } else {
                             resultJson.put(key, jsonField.value)
                         }
@@ -66,12 +65,8 @@ class MapperStep(
                     }
                 }
             }
-            return@map gsonBuilder.create().fromJson(resultJson.encode(), pClass)
+            return@map jsonParser.encode(resultJson.encode(), pClass)
         }
-    }
-
-    private fun <T> getList(list: Any?, pClass: Class<T>): MutableList<T> {
-        return list as (MutableList<T>)
     }
 }
 

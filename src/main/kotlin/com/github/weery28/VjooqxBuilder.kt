@@ -1,6 +1,6 @@
 package com.github.weery28
 
-import com.google.gson.GsonBuilder
+import com.github.weery28.json.JsonParserFactory
 import io.vertx.reactivex.ext.asyncsql.AsyncSQLClient
 import org.jooq.DSLContext
 
@@ -21,7 +21,7 @@ interface Creator {
 
 interface SetupJsonFactory{
 
-    fun jsonFactory(gsonBuilder: GsonBuilder) : Creator
+    fun jsonFactory(jsonParserFactory: JsonParserFactory) : VjooqxBuilder
 }
 
 
@@ -32,7 +32,7 @@ class VjooqxBuilder : Builder, SetupDSLStep, Creator, SetupJsonFactory{
 
     private lateinit var asyncSQLClient: AsyncSQLClient
 
-    private lateinit var gsonBuilder: GsonBuilder
+    private lateinit var jsonParserFactory: JsonParserFactory
 
     override fun setupDelegate(delegate: AsyncSQLClient): VjooqxBuilder {
         asyncSQLClient = delegate
@@ -45,11 +45,11 @@ class VjooqxBuilder : Builder, SetupDSLStep, Creator, SetupJsonFactory{
     }
 
     override fun create() : Vjooqx {
-        return Vjooqx(asyncSQLClient, dslContext, gsonBuilder)
+        return Vjooqx(asyncSQLClient, dslContext, jsonParserFactory.buildJsonParser())
     }
 
-    override fun jsonFactory(gsonBuilder: GsonBuilder) : VjooqxBuilder{
-        this.gsonBuilder = gsonBuilder
+    override fun jsonFactory(jsonParserFactory: JsonParserFactory) : VjooqxBuilder{
+        this.jsonParserFactory = jsonParserFactory
         return this
     }
 }
