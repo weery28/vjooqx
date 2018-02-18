@@ -1,7 +1,3 @@
-import groovy.xml.MarkupBuilder
-import org.jooq.util.GenerationTool
-import javax.xml.bind.JAXB
-
 buildscript {
     ext.kotlin_version = '1.2.21'
 
@@ -54,37 +50,3 @@ compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
 
-task generate {
-    def writer = new StringWriter()
-    def xml = new MarkupBuilder(writer)
-            .configuration('xmlns': 'http://www.jooq.org/xsd/jooq-codegen-3.10.0.xsd') {
-        jdbc() {
-            driver('org.postgresql.Driver')
-            url('jdbc:postgresql://127.0.0.1:5432/sportvisor')
-            user('admin')
-            password('123456')
-        }
-        generator() {
-            database() {
-                name('org.jooq.util.postgres.PostgresDatabase')
-                inputSchema('public')
-                excludes("schema_version")
-            }
-
-            generate([:]) {
-                relations true
-                records true
-                interfaces true
-                validationAnnotations true
-            }
-            target() {
-                packageName('models.generated')
-                directory('src/main/java/')
-            }
-        }
-    }
-
-    GenerationTool.generate(
-            JAXB.unmarshal(new StringReader(writer.toString()), org.jooq.util.jaxb.Configuration.class)
-    )
-}
