@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.weery28.exceptions.FlatMappingException
 import com.github.weery28.json.JsonParser
+import com.sun.org.apache.xpath.internal.operations.Bool
 import io.reactivex.Single
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.sql.ResultSet
 import org.jooq.Field
+import java.util.ArrayList
 
 class MapperStep(
         private val jsonParser: JsonParser,
@@ -32,11 +34,19 @@ class MapperStep(
 
     fun <T> toListOf(pClass: Class<T>): Single<List<T>> {
         return resultSingle.map {
-            it.rows.map {
-                jsonParser.encode(it.encode(), pClass)
+
+            val t = it.rows.map {
+               makeListFields(unpackAlias(it), listOf("teams", "squad", "positions"
+                ))
+                //jsonParser.encode(unpackAlias(it).encode(), pClass)
+//                return@map jsonParser.encode(makeListFields(
+//                        unpackAlias(it), listOf("teams", "positions", "squad")).encode(), pClass)
             }
+             print(folder(t, listOf("teams", "squad", "positions")))
+            return@map emptyList<T>()
         }
     }
+
 
     fun <T> toFlatFields(pClass: Class<T>, vararg fields: Field<*>): Single<T> {
 
@@ -91,11 +101,12 @@ class MapperStep(
                 unpackingResult.put(topLevelKey, it.value)
             }
         }
-        System.out.print(unpackingResult.encode())
+        //System.out.print(unpackingResult.encode())
         return unpackingResult
     }
 
     private fun getNode(path: MutableList<String>, value: Any?, node: JsonObject? = null): JsonObject {
+
         if (path.size != 1) {
             if (node == null) {
                 return JsonObject().put(path.removeAt(0), getNode(path, value))
@@ -103,11 +114,11 @@ class MapperStep(
 
                 val key = path.removeAt(0)
                 if (node.containsKey(key)) {
-                    return node.copy()
+                    return node
                             .put(key, getNode(path, value, node.getJsonObject(key)))
                 } else {
                     return node
-                            .copy()
+
                             .put(key, getNode(path, value, null))
                 }
             }
@@ -120,6 +131,140 @@ class MapperStep(
 
         }
     }
+
+    fun <T> toStickyFields(pClass: Class<T>, stickyAliases: Map<String, String>): Single<T?> {
+        return resultSingle.flatMap {
+
+            val objects = it.rows.map {
+                unpackAlias(it)
+            }
+
+
+
+            return@flatMap Single.just(null)
+
+        }
+    }
+
+//    fun <T> concatTo(pClass: Class<T>, vararg listAliases: String): Single<T> {
+//        return resultSingle.map {
+//            it.rows.
+//        }
+//    }
+
+    private fun <T> concat(
+            pClass: Class<T>,
+            jsonObjects: List<JsonObject>,
+            listAliases: List<String>): T? {
+
+        val preparedJsonObjects = jsonObjects.map { makeListFields(it, listAliases) }
+
+
+
+        return null
+    }
+
+    private fun makeListFields(jsonObject: JsonObject,
+                               listAliases: List<String>): JsonObject {
+
+        val resultJsonObject = JsonObject()
+        jsonObject.forEach {
+            val value = it.value
+            if (listAliases.contains(it.key)) {
+                when (value) {
+                    is JsonObject -> resultJsonObject.put(it.key, JsonArray(
+                            listOf(makeListFields(value, listAliases))
+                    ))
+                //TODO check arrays
+                    else -> resultJsonObject.put(it.key, listOf(value))
+                }
+            } else {
+                when (value) {
+                    is JsonObject -> resultJsonObject.put(it.key,
+                            makeListFields(value, listAliases)
+                    )
+                //TODO check arrays
+                    else -> resultJsonObject.put(it.key, value)
+                }
+            }
+
+        }
+        return resultJsonObject
+    }
+
+    private fun folder(
+            jsonObjects: List<JsonObject>,
+            listAliases: List<String>): JsonArray {
+
+        val jsonResult = JsonArray()
+
+        jsonObjects.forEachIndexed { index, jsonObject ->
+            if (index == 0) {
+                jsonResult.add(jsonObject)
+            } else {
+                var stickyObject : JsonObject? = (jsonResult.firstOrNull { isFolded(it as JsonObject, jsonObject, listAliases) } as JsonObject?)?.copy()
+                if (stickyObject == null) {
+                    jsonResult.add(jsonObject)
+                } else {
+                    jsonResult.remove(stickyObject)
+                    stickyObject = stickyObject.copy()
+                    val stickyFields = getStickyFields(jsonObject, listAliases)
+                    stickyFields.forEach{
+                        val tArray : JsonArray = stickyObject.getJsonArray(it).copy()
+                        val tObject = jsonObject.getJsonArray(it).getValue(0) as JsonObject
+                        tArray.add(tObject)
+                        stickyObject.put(it, folder(
+                            tArray.map { it as JsonObject }, listAliases
+                        ))
+                    }
+                    jsonResult.add(stickyObject)
+                }
+            }
+        }
+        return jsonResult
+    }
+
+    private fun getStickyFields(
+            jsonObject: JsonObject,
+            listAliases: List<String>
+    ): List<String> {
+        return jsonObject.filter { listAliases.contains(it.key) }.map { it.key }
+    }
+
+    private fun isFolded(jsonObject1: JsonObject,
+                         jsonObject2: JsonObject,
+                         listAliases: List<String>): Boolean {
+        jsonObject1.forEach {
+            if (!listAliases.contains(it.key) && !jsonObject2.getValue(it.key).equals(it.value)) {
+                return false
+            }
+        }
+        return true
+    }
+
+    private fun rowsFolder(jsonRows: List<JsonObject>, listAliases: List<String>) {
+
+        val result = JsonObject()
+        jsonRows.forEach { jsonRow ->
+            jsonRow.forEach { fieldName ->
+                val splitKeys = fieldName.key.split(".")
+                if (splitKeys.size == 1) {
+
+                }
+
+            }
+        }
+
+    }
+
+    class GroupField(
+            val name: String
+    ) {
+        val uniquesKeys = ArrayList<String>()
+        val uniqueValues = HashMap<String, Any>()
+    }
+
+
 }
 
 
