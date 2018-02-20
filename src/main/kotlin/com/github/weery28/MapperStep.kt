@@ -14,7 +14,7 @@ class MapperStep(
         private val resultSingle: Single<ResultSet>) {
 
 
-    fun <T> to(pClass: Class<T>): Single<T?> {
+    fun <T> to(pClass: Class<T>): Single<T> {
 
         return resultSingle.flatMap {
             val jsonResult = it.rows.firstOrNull()?.let {
@@ -23,7 +23,7 @@ class MapperStep(
             if (jsonResult != null) {
                 Single.just((jsonParser.encode(jsonResult, pClass)))
             } else {
-                Single.just(null)
+                Single.error(NullPointerException("Result is null"))
             }
         }
     }
