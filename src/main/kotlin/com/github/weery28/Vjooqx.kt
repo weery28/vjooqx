@@ -27,11 +27,11 @@ class Vjooqx(
 
     }
 
-    fun execute(query: Query): Single<Int> {
+    fun execute(query: (DSLContext) -> Query): Single<Int> {
         return getConnection()
                 .flatMap { sqlConnection ->
                     sqlConnection
-                            .rxUpdate(query.getSQL(ParamType.NAMED_OR_INLINED))
+                            .rxUpdate(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED))
                             .map { it.updated }
                 }
     }
