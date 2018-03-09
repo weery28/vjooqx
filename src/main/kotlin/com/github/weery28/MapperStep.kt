@@ -38,11 +38,16 @@ class MapperStep(
 
     fun <T> toTree(pClass: Class<T>, listAliases: List<String>): Single<T> {
         return resultSingle.map {
-            jsonParser.encode(
-                    folder(it.rows.map {
-                        makeListFields(unpackAlias(it), listAliases)
-                    }, listAliases).getJsonObject(0).encode(),
-                    pClass)
+
+            if (it.rows.size > 0) {
+                jsonParser.encode(
+                        folder(it.rows.map {
+                            makeListFields(unpackAlias(it), listAliases)
+                        }, listAliases).getJsonObject(0).encode(),
+                        pClass)
+            }else{
+                throw NullPointerException()
+            }
         }
     }
 
