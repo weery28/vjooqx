@@ -42,10 +42,12 @@ class MapperStep(
             if (it.rows.size > 0) {
                 jsonParser.encode(
                         folder(it.rows.map {
-                            makeListFields(unpackAlias(it), listAliases)
+                            makeListFields(unpackAlias(it), listAliases).apply {
+                                print("--------->" + it.encode())
+                            }
                         }, listAliases).getJsonObject(0).encode(),
                         pClass)
-            }else{
+            } else {
                 throw NullPointerException()
             }
         }
@@ -150,9 +152,11 @@ class MapperStep(
             val value = it.value
             if (listAliases.contains(it.key)) {
                 when (value) {
-                    is JsonObject -> resultJsonObject.put(it.key, JsonArray(
-                            listOf(makeListFields(value, listAliases))
-                    ))
+                    is JsonObject -> {
+                        resultJsonObject.put(it.key, JsonArray(
+                                listOf(makeListFields(value, listAliases))
+                        ))
+                    }
                 //TODO check arrays
                     else -> resultJsonObject.put(it.key, listOf(value))
                 }
@@ -215,15 +219,14 @@ class MapperStep(
                          listAliases: List<String>): Boolean {
         jsonObject1.forEach {
             val isListAlias = listAliases.contains(it.key)
-            val isFieldEquals = with(jsonObject2.getValue(it.key)){
-                if (this == null){
+            val isFieldEquals = with(jsonObject2.getValue(it.key)) {
+                if (this == null) {
                     return@with it.value == null
-                }
-                else{
+                } else {
                     return@with this.equals(it.value)
                 }
             }
-            if (!isListAlias && !isFieldEquals){
+            if (!isListAlias && !isFieldEquals) {
                 return false
             }
         }
