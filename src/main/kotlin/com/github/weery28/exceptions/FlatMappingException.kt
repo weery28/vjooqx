@@ -1,7 +1,7 @@
 package com.github.weery28.exceptions
 
 
-class FlatMappingException : RuntimeException{
+class FlatMappingException : RuntimeException {
 
     constructor() : super()
     constructor(message: String?) : super(message)
