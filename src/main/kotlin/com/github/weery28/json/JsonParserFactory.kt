@@ -1,6 +1,6 @@
 package com.github.weery28.json
 
-interface JsonParserFactory{
+interface JsonParserFactory {
 
-    fun buildJsonParser() : JsonParser
+    fun buildJsonParser(): JsonParser
 }
