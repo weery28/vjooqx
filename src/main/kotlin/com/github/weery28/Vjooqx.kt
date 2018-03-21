@@ -9,37 +9,45 @@ import org.jooq.Query
 import org.jooq.conf.ParamType
 
 class Vjooqx(
-        private val delegate: AsyncSQLClient,
-        private val dslContext: DSLContext,
-        private val jsonParser: JsonParser) {
+		private val delegate: AsyncSQLClient,
+		private val dslContext: DSLContext,
+		private val jsonParser: JsonParser,
+		private val loggingInterceptor: LoggingInterceptor?) {
 
 
-    fun fetch(query: (DSLContext) -> Query): MapperStep {
-        return MapperStepImpl(jsonParser, getConnection()
-                .flatMap { connection ->
-                    return@flatMap connection
-                            .rxQuery(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED))
-                            .doAfterTerminate {
-                                connection.close()
-                            }
-                })
+	fun fetch(query: (DSLContext) -> Query): MapperStep {
+		return MapperStepImpl(jsonParser, getConnection()
+				.flatMap { connection ->
+					return@flatMap connection
+							.rxQuery(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
+								loggingInterceptor?.log("Database <----- : " + this)
+							})
+							.doAfterTerminate {
+								connection.close()
+							}
+				}, loggingInterceptor)
 
-    }
+	}
 
-    fun execute(query: (DSLContext) -> Query): Single<Int> {
-        return getConnection()
-                .flatMap { sqlConnection ->
-                    sqlConnection
-                            .rxUpdate(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED))
-                            .map {
-                                it.updated
-                            }
-                }
-    }
+	fun execute(query: (DSLContext) -> Query): Single<Int> {
+		return getConnection()
+				.flatMap { connection ->
+					connection
+							.rxUpdate(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
+								loggingInterceptor?.log("Database <----- : " + this)
+							})
+							.map {
+								it.updated
+							}
+							.doAfterTerminate {
+								connection.close()
+							}
+				}
+	}
 
-    private fun getConnection(): Single<SQLConnection> {
-        return delegate.rxGetConnection()
-    }
+	private fun getConnection(): Single<SQLConnection> {
+		return delegate.rxGetConnection()
+	}
 
 }
 
