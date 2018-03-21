@@ -45,11 +45,7 @@ class MapperStepImpl(
 			if (it.rows.size > 0) {
 				jsonParser.encode(
 						folder(it.rows.map {
-							makeListFields(unpackAlias(it).apply {
-								print("UnpackAliasResult" + this.encode() + "\n\n")
-							}, listAliases).apply {
-								print("MakeListFieldsResult" + this.encode() + "\n\n")
-							}
+							makeListFields(unpackAlias(it), listAliases)
 						}, listAliases).getJsonObject(0).encode(),
 						pClass)
 			} else {
