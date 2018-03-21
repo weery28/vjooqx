@@ -6,11 +6,13 @@ import org.jooq.DSLContext
 
 interface Builder {
 
-    fun setupDelegate(delegate: AsyncSQLClient): Builder
+	fun setupDelegate(delegate: AsyncSQLClient): Builder
 
-    fun dsl(dslContext: DSLContext): Builder
+	fun dsl(dslContext: DSLContext): Builder
 
-    fun create(): Vjooqx
+	fun create(): Vjooqx
 
-    fun jsonFactory(jsonParserFactory: JsonParserFactory): VjooqxBuilder
+	fun jsonFactory(jsonParserFactory: JsonParserFactory): Builder
+
+	fun addLoggingInterceptor(loggingInterceptor: LoggingInterceptor): Builder
 }
