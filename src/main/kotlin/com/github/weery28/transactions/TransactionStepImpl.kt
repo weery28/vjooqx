@@ -23,7 +23,8 @@ class TransactionStepImpl<T>(
 		return TransactionStepImpl(result.flatMap {
 			action(it, transactionContext).result()
 		}.doOnError {
-					transactionContext.getConnection().rxRollback().andThen { transactionContext.getConnection().close() }.subscribe()
+					transactionContext.getConnection().rxRollback().andThen {
+						transactionContext.getConnection().close() }.subscribe()
 				}, transactionContext)
 	}
 
@@ -43,9 +44,13 @@ class TransactionStepImpl<T>(
 	override fun rollBackIf(action: (T) -> Boolean): Completable {
 		return result.flatMapCompletable {
 			if (action(it)) {
-				transactionContext.getConnection().rxRollback().andThen { transactionContext.getConnection().close() }
+				transactionContext.getConnection().rxRollback().andThen {
+					transactionContext.getConnection().close()
+				}
 			} else {
-				transactionContext.getConnection().rxCommit()
+				transactionContext.getConnection().rxCommit().andThen {
+					transactionContext.getConnection().close()
+				}
 			}
 		}
 
@@ -53,7 +58,12 @@ class TransactionStepImpl<T>(
 	}
 
 	override fun rollBackOnError(): Single<T> {
-		return result.doOnError { transactionContext.getConnection().rxRollback().andThen { transactionContext.getConnection().close() }.subscribe() }
+		return result.doOnError {
+			transactionContext.getConnection().rxRollback()
+					.andThen { transactionContext.getConnection().close() }.subscribe()
+		}.doOnSuccess {
+					transactionContext.getConnection().close()
+				}
 
 	}
 
