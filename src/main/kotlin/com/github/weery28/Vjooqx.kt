@@ -52,9 +52,7 @@ class Vjooqx(
 	}
 
 	private fun getConnection(): Single<SQLConnection> {
-		return delegate.rxGetConnection().apply {
-			print("!!!!!!!!! GET CONNECTION !!!!!!!!!")
-		}
+		return delegate.rxGetConnection()
 	}
 }
 

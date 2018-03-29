@@ -61,7 +61,6 @@ class TransactionStepImpl<T>(
 			transactionContext.getConnection().rxRollback()
 					.andThen { transactionContext.getConnection().close() }.subscribe()
 		}.doOnSuccess {
-					print("CLOSED!")
 					transactionContext.getConnection().rxCommit().subscribe {
 						transactionContext.getConnection().close()
 					}

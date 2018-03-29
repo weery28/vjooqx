@@ -45,22 +45,14 @@ class TransactionContextImpl(
 	private fun fetchWithConnection(query: (DSLContext) -> Query): Single<ResultSet> {
 
 		return if (connection != null) {
-			connection!!.rxQuery(
-					query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
-						loggingInterceptor?.log("Database <----- : " + this)
-					}
-			)
+			query(connection!!, query)
 		} else {
 			connectionProvider.flatMap { connection ->
 				this.connection = connection
 				connection.rxSetAutoCommit(false)
 						.toSingle { true }
 						.flatMap {
-							connection.rxQuery(
-									query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
-										loggingInterceptor?.log("Database <----- : " + this)
-									}
-							)
+							query(connection, query)
 						}
 			}
 		}
@@ -69,30 +61,34 @@ class TransactionContextImpl(
 	private fun executeWithConnection(query: (DSLContext) -> Query): Single<Int> {
 
 		return if (connection != null) {
-			connection!!
-					.rxUpdate(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
-						loggingInterceptor?.log("Database <----- : " + this)
-					})
-					.map {
-						it.updated
-					}
+			update(connection!!, query)
 		} else {
 			connectionProvider.flatMap { connection ->
 				this.connection = connection
 				connection.rxSetAutoCommit(false)
 						.toSingle { true }
-						.flatMap {
-							connection
-									.rxUpdate(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
-										loggingInterceptor?.log("Database <----- : " + this)
-									})
-									.map {
-										it.updated
-									}
-						}
+						.flatMap { update(connection, query) }
 			}
 		}
 
+	}
+
+	private fun update(connection: SQLConnection, query: (DSLContext) -> Query): Single<Int> {
+		return connection
+				.rxUpdate(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
+					loggingInterceptor?.log("Database <----- : " + this)
+				})
+				.map {
+					it.updated
+				}
+	}
+
+	private fun query(connection: SQLConnection, query: (DSLContext) -> Query): Single<ResultSet> {
+		return connection.rxQuery(
+				query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
+					loggingInterceptor?.log("Database <----- : " + this)
+				}
+		)
 	}
 
 }
