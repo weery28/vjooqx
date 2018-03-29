@@ -35,11 +35,6 @@ class SimpleTest{
                 .setupDelegate(delegate)
                 .jsonFactory(GsonFactory())
                 .create()
-
-        vjooqx.transaction().fetch {
-            it.select()
-        }.to(GsonParser::class.java)
-
     }
 
     @Test
