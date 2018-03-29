@@ -55,21 +55,20 @@ class TransactionStepImpl<T>(
 
 		return result
 				.onErrorResumeNext { t ->
-					transactionContext.getConnection().rxRollback()
-							.andThen { transactionContext.getConnection().close() }
-							.toSingle { true }
+					transactionContext
+							.getConnection()
+							.rxRollback()
+							.toSingle { false }
+							.flatMap { transactionContext.getConnection().rxClose().toSingle { false } }
 							.flatMap { Single.error<T>(t) }
 				}
 				.flatMap {
-					print("\n\n\n===RollBackOnError without error===\n\n\n")
 					transactionContext.getConnection().rxCommit().toSingle { it }
 				}
 				.flatMap {
-					print("\n\n\n===commited===\n\n\n")
 					transactionContext.getConnection().rxClose().toSingle { it }
 				}
 				.flatMap {
-					print("\n\n\n===closed===\n\n\n")
 					Single.just(it)
 				}
 	}
