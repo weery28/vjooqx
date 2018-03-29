@@ -2,7 +2,6 @@ package com.github.weery28.transactions
 
 import io.reactivex.Completable
 import io.reactivex.Single
-import io.vertx.reactivex.ext.sql.SQLConnection
 
 
 class TransactionStepImpl<T>(
@@ -62,6 +61,7 @@ class TransactionStepImpl<T>(
 			transactionContext.getConnection().rxRollback()
 					.andThen { transactionContext.getConnection().close() }.subscribe()
 		}.doOnSuccess {
+					print("CLOSED!")
 					transactionContext.getConnection().close()
 				}
 
