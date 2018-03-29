@@ -6,29 +6,31 @@ import io.reactivex.Single
 
 class TransactionStepImpl<T>(
 		private val result: Single<T>,
-		val transactionContext: TransactionContext
+		private val transactionContext: TransactionContext
 ) : TransactionStep<T> {
 
 	override fun commit(): Single<T> {
+
 		return transactionContext.getConnection().rxCommit()
 				.toSingle { true }
 				.flatMap { result }
 				.doAfterTerminate { transactionContext.getConnection().close() }
-
-
 	}
 
 	override fun <E> then(action: (T, TransactionContext) -> Execution<E>): TransactionStep<E> {
+
 		return TransactionStepImpl(result.flatMap {
 			action(it, transactionContext).result()
-		}.doOnError {
+		}.onErrorResumeNext { t ->
 					transactionContext.getConnection().rxRollback().andThen {
-						transactionContext.getConnection().close() }.subscribe()
+						transactionContext.getConnection().close()
+					}.toSingle { true }.flatMap { Single.error<E>(t) }
 				}, transactionContext)
 	}
 
 
 	override fun thenCommit(action: (T) -> T): Single<T> {
+
 		return result.flatMap {
 			action(it)
 			transactionContext.getConnection()
@@ -36,11 +38,10 @@ class TransactionStepImpl<T>(
 					.andThen { transactionContext.getConnection().close() }
 					.toSingle { action(it) }
 		}
-
-
 	}
 
 	override fun rollBackIf(action: (T) -> Boolean): Completable {
+
 		return result.flatMapCompletable {
 			if (action(it)) {
 				transactionContext.getConnection().rxRollback().andThen {
@@ -52,21 +53,21 @@ class TransactionStepImpl<T>(
 				}
 			}
 		}
-
-
 	}
 
 	override fun rollBackOnError(): Single<T> {
-		return result.doOnError {
+
+		return result.onErrorResumeNext { t ->
 			transactionContext.getConnection().rxRollback()
-					.andThen { transactionContext.getConnection().close() }.subscribe()
-		}.doOnSuccess {
-					transactionContext.getConnection().rxCommit().subscribe {
+					.andThen { transactionContext.getConnection().close() }
+					.toSingle { true }
+					.flatMap { Single.error<T>(t) }
+		}.flatMap {
+					transactionContext.getConnection().rxCommit().andThen {
 						transactionContext.getConnection().close()
-					}
+					}.toSingle { it }
 
 				}
-
 	}
 
 	override fun result(): Single<T> {
