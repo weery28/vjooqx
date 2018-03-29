@@ -21,11 +21,7 @@ class TransactionStepImpl<T>(
 
 		return TransactionStepImpl(result.flatMap {
 			action(it, transactionContext).result()
-		}.onErrorResumeNext { t ->
-					transactionContext.getConnection().rxRollback().andThen {
-						transactionContext.getConnection().close()
-					}.toSingle { true }.flatMap { Single.error<E>(t) }
-				}, transactionContext)
+		}, transactionContext)
 	}
 
 
