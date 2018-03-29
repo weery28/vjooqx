@@ -53,19 +53,24 @@ class TransactionStepImpl<T>(
 
 	override fun rollBackOnError(): Single<T> {
 
-		return result.onErrorResumeNext { t ->
-			transactionContext.getConnection().rxRollback()
-					.andThen { transactionContext.getConnection().close() }
-					.toSingle { true }
-					.flatMap { Single.error<T>(t) }
-		}.flatMap {
+		return result
+				.onErrorResumeNext { t ->
+					transactionContext.getConnection().rxRollback()
+							.andThen { transactionContext.getConnection().close() }
+							.toSingle { true }
+							.flatMap { Single.error<T>(t) }
+				}
+				.flatMap {
 					print("\n\n\n===RollBackOnError without error===\n\n\n")
-					transactionContext.getConnection().rxCommit().andThen {
-						print("===commit===")
-						transactionContext.getConnection().close()
-					}.toSingle {
-								print("\n\n\n===close===\n\n\n")
-								it }
+					transactionContext.getConnection().rxCommit().toSingle { it }
+				}
+				.flatMap {
+					print("\n\n\n===commited===\n\n\n")
+					transactionContext.getConnection().rxClose().toSingle { it }
+				}
+				.flatMap {
+					print("\n\n\n===closed===\n\n\n")
+					Single.just(it)
 				}
 	}
 
