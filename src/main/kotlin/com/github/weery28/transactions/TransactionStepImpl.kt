@@ -65,4 +65,8 @@ class TransactionStepImpl<T>(
 			result.doOnError { connection.rxRollback().andThen { connection.close() }.subscribe() }
 		}
 	}
+
+	override fun result(): Single<T> {
+		return result
+	}
 }

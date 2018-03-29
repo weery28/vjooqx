@@ -34,8 +34,22 @@ class TransactionContextImpl(
 		}, loggingInterceptor, this)
 	}
 
-	override fun execute(query: (DSLContext) -> Query): Single<Int> {
-		TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+	override fun execute(query: (DSLContext) -> Query): TransactionStep<Int> {
+		return TransactionStepImpl(
+				connectionProvider.flatMap { connection ->
+					connection.rxSetAutoCommit(false)
+							.toSingle { true }
+							.flatMap {
+								connection
+										.rxUpdate(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
+											loggingInterceptor?.log("Database <----- : " + this)
+										})
+										.map {
+											it.updated
+										}
+							}
+				}, connectionProvider, this
+		)
 	}
 
 	private fun setAutoCommitFalse(connection: io.vertx.reactivex.ext.sql.SQLConnection, isTransaction: Boolean): Single<io.vertx.reactivex.ext.sql.SQLConnection> {

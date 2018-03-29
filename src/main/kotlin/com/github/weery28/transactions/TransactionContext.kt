@@ -9,5 +9,5 @@ interface TransactionContext{
 
 	fun fetch(query: (DSLContext) -> Query): MapperStepTransaction
 
-	fun execute(query: (DSLContext) -> Query): Single<Int>
+	fun execute(query: (DSLContext) -> Query): TransactionStep<Int>
 }
