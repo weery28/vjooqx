@@ -60,8 +60,11 @@ class TransactionStepImpl<T>(
 					.flatMap { Single.error<T>(t) }
 		}.flatMap {
 					transactionContext.getConnection().rxCommit().andThen {
+						print("======= CLOSE =======")
 						transactionContext.getConnection().close()
-					}.toSingle { it }
+					}.apply {
+								print("======= COMMIT =======")
+							}.toSingle { it }
 
 				}
 	}
