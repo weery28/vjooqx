@@ -59,13 +59,13 @@ class TransactionStepImpl<T>(
 					.toSingle { true }
 					.flatMap { Single.error<T>(t) }
 		}.flatMap {
+					print("\n\n\n===RollBackOnError without error===\n\n\n")
 					transactionContext.getConnection().rxCommit().andThen {
-						print("======= CLOSE =======")
+						print("===commit===")
 						transactionContext.getConnection().close()
-					}.apply {
-								print("======= COMMIT =======")
-							}.toSingle { it }
-
+					}.toSingle {
+								print("\n\n\n===close===\n\n\n")
+								it }
 				}
 	}
 
