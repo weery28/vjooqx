@@ -17,57 +17,82 @@ class TransactionContextImpl(
 		private val dslContext: DSLContext
 ) : TransactionContext {
 
+	@Volatile
+	private var connection: SQLConnection? = null
+
+	override fun getConnection(): SQLConnection {
+		return connection!!
+	}
+
+	override fun getLoggingInterceptor(): LoggingInterceptor? {
+		return loggingInterceptor
+	}
+
+	override fun getJsonParser(): JsonParser {
+		return jsonParser
+	}
+
 	override fun fetch(query: (DSLContext) -> Query): MapperStepTransaction {
 
-		return MapperStepTransactionImpl(jsonParser, connectionProvider.flatMap { connection ->
-			connection.rxSetAutoCommit(false)
-					.toSingle { true }
-					.flatMap {
-						connection.rxQuery(
-								query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
-									loggingInterceptor?.log("Database <----- : " + this)
-								}
-						).map {
-							Pair(it, connection)
-						}
-					}
-		}, loggingInterceptor, this)
+		return MapperStepTransactionImpl(fetchWithConnection(query), this)
 	}
 
 	override fun execute(query: (DSLContext) -> Query): TransactionStep<Int> {
-		return TransactionStepImpl(
-				connectionProvider.flatMap { connection ->
-					connection.rxSetAutoCommit(false)
-							.toSingle { true }
-							.flatMap {
-								connection
-										.rxUpdate(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
-											loggingInterceptor?.log("Database <----- : " + this)
-										})
-										.map {
-											it.updated
-										}
-							}
-				}, connectionProvider, this
-		)
+		return TransactionStepImpl(executeWithConnection(query), this)
 	}
 
-	private fun setAutoCommitFalse(connection: io.vertx.reactivex.ext.sql.SQLConnection, isTransaction: Boolean): Single<io.vertx.reactivex.ext.sql.SQLConnection> {
-		return if (isTransaction) {
-			connection.rxSetAutoCommit(false).toSingle { connection }
+
+	private fun fetchWithConnection(query: (DSLContext) -> Query): Single<ResultSet> {
+
+		return if (connection != null) {
+			connection!!.rxQuery(
+					query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
+						loggingInterceptor?.log("Database <----- : " + this)
+					}
+			)
 		} else {
-			return Single.just(connection)
-		}
-	}
-
-	private fun setAutoClose(single: Single<ResultSet>, connection: io.vertx.reactivex.ext.sql.SQLConnection, isTransaction: Boolean)
-			: Single<ResultSet> {
-		return if (!isTransaction) {
-			single.doAfterTerminate {
-				connection.close()
+			connectionProvider.flatMap { connection ->
+				this.connection = connection
+				connection.rxSetAutoCommit(false)
+						.toSingle { true }
+						.flatMap {
+							connection.rxQuery(
+									query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
+										loggingInterceptor?.log("Database <----- : " + this)
+									}
+							)
+						}
 			}
-		} else {
-			single
 		}
 	}
+
+	private fun executeWithConnection(query: (DSLContext) -> Query): Single<Int> {
+
+		return if (connection != null) {
+			connection!!
+					.rxUpdate(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
+						loggingInterceptor?.log("Database <----- : " + this)
+					})
+					.map {
+						it.updated
+					}
+		} else {
+			connectionProvider.flatMap { connection ->
+				this.connection = connection
+				connection.rxSetAutoCommit(false)
+						.toSingle { true }
+						.flatMap {
+							connection
+									.rxUpdate(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
+										loggingInterceptor?.log("Database <----- : " + this)
+									})
+									.map {
+										it.updated
+									}
+						}
+			}
+		}
+
+	}
+
 }
