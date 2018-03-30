@@ -31,8 +31,8 @@ class TransactionStepImpl<T>(
 			action(it)
 			transactionContext.getConnection()
 					.rxCommit()
-					.andThen { transactionContext.getConnection().close() }
-					.toSingle { action(it) }
+					.andThen(transactionContext.getConnection().rxClose())
+					.andThen(Single.just(action(it)))
 		}
 	}
 
@@ -40,48 +40,26 @@ class TransactionStepImpl<T>(
 
 		return result.flatMapCompletable {
 			if (action(it)) {
-				transactionContext.getConnection().rxRollback().andThen {
-					transactionContext.getConnection().close()
-				}
+				transactionContext.getConnection()
+						.rxRollback().andThen(transactionContext.getConnection().rxClose())
+
 			} else {
-				transactionContext.getConnection().rxCommit().andThen {
-					transactionContext.getConnection().close()
-				}
+				transactionContext.getConnection().rxCommit().andThen(
+						transactionContext.getConnection().rxClose())
 			}
 		}
 	}
 
 	override fun rollBackOnError(): Single<T> {
-
-//		return result
-//				.onErrorResumeNext { t ->
-//					transactionContext
-//							.getConnection()
-//							.rxRollback()
-//							.toSingle { false }
-//							.flatMap { transactionContext.getConnection().rxClose().toSingle { false } }
-//							.flatMap { Single.error<T>(t) }
-//				}
-//				.flatMap {
-//					transactionContext.getConnection().rxCommit().toSingle { it }
-//				}
-//				.flatMap {
-//					transactionContext.getConnection().rxClose().toSingle { it }
-//				}
-//				.flatMap {
-//					Single.just(it)
-//				}
-
-		return result.
-				onErrorResumeNext {
-					t ->  transactionContext.getConnection()
-						.rxRollback()
-						.andThen { transactionContext.getConnection().rxClose() }
-						.andThen(Single.error<T>(t))
-				}.flatMap {
+		return result.onErrorResumeNext { t ->
+			transactionContext.getConnection()
+					.rxRollback()
+					.andThen(transactionContext.getConnection().rxClose())
+					.andThen(Single.error<T>(t))
+		}.flatMap {
 					transactionContext.getConnection()
 							.rxCommit()
-							.andThen { transactionContext.getConnection().rxClose() }
+							.andThen(transactionContext.getConnection().rxClose())
 							.andThen(Single.just(it))
 				}
 	}
