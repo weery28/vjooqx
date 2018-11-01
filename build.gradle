@@ -1,6 +1,7 @@
 
 buildscript {
     ext.kotlin_version = '1.2.21'
+    ext.vertx_version = '3.5.4'
 
     repositories {
         mavenCentral()
@@ -30,9 +31,8 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     compile 'com.github.jitpack:gradle-simple:1.0'
 
-    compile 'io.vertx:vertx-rx-java2:3.5.1'
-    compile 'io.vertx:vertx-mysql-postgresql-client:3.5.1'
-    compile 'io.reactivex.rxjava2:rxjava:2.1.8'
+    compile "io.vertx:vertx-rx-java2:$vertx_version"
+    compile "io.vertx:vertx-mysql-postgresql-client:$vertx_version"
 
     compile 'org.jooq:jooq:3.10.3'
 
