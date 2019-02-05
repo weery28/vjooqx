@@ -7,15 +7,15 @@ import org.jooq.DSLContext
 import org.jooq.Query
 
 
-interface TransactionContext{
+interface TransactionContext {
 
-	fun getConnection() : SQLConnection
+    fun getConnection(): SQLConnection
 
-	fun getLoggingInterceptor() : LoggingInterceptor?
+    fun getLoggingInterceptor(): LoggingInterceptor?
 
-	fun getJsonParser() : JsonParser
+    fun getJsonParser(): JsonParser
 
-	fun fetch(query: (DSLContext) -> Query): MapperStepTransaction
+    fun fetch(query: DSLContext.() -> Query): MapperStepTransaction
 
-	fun execute(query: (DSLContext) -> Query): TransactionStep<Int>
+    fun execute(query: DSLContext.() -> Query): TransactionStep<Int>
 }
