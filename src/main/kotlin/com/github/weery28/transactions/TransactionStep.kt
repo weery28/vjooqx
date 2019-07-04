@@ -6,13 +6,13 @@ import io.reactivex.Single
 
 interface TransactionStep<T> : Execution<T> {
 
-	fun commit(): Single<T>
+    fun commit(): Single<T>
 
-	fun <E> then(action: (T, TransactionContext) -> Execution<E>): TransactionStep<E>
+    fun <E> then(action: (T, TransactionContext) -> Execution<E>): TransactionStep<E>
 
-	fun thenCommit(action: (T) -> T): Single<T>
+    fun thenCommit(action: (T) -> T): Single<T>
 
-	fun rollBackIf(action: (T) -> Boolean) : Completable
+    fun rollBackIf(action: (T) -> Boolean): Completable
 
-	fun rollBackOnError() : Single<T>
+    fun rollBackOnError(): Single<T>
 }

@@ -5,66 +5,66 @@ import io.reactivex.Single
 
 
 class TransactionStepImpl<T>(
-		private val result: Single<T>,
-		private val transactionContext: TransactionContext
+        private val result: Single<T>,
+        private val transactionContext: TransactionContext
 ) : TransactionStep<T> {
 
-	override fun commit(): Single<T> {
+    override fun commit(): Single<T> {
 
-		return transactionContext.getConnection().rxCommit()
-				.toSingle { true }
-				.flatMap { result }
-				.doAfterTerminate { transactionContext.getConnection().close() }
-	}
+        return transactionContext.getConnection().rxCommit()
+                .toSingle { true }
+                .flatMap { result }
+                .doAfterTerminate { transactionContext.getConnection().close() }
+    }
 
-	override fun <E> then(action: (T, TransactionContext) -> Execution<E>): TransactionStep<E> {
+    override fun <E> then(action: (T, TransactionContext) -> Execution<E>): TransactionStep<E> {
 
-		return TransactionStepImpl(result.flatMap {
-			action(it, transactionContext).result()
-		}, transactionContext)
-	}
+        return TransactionStepImpl(result.flatMap {
+            action(it, transactionContext).result()
+        }, transactionContext)
+    }
 
 
-	override fun thenCommit(action: (T) -> T): Single<T> {
+    override fun thenCommit(action: (T) -> T): Single<T> {
 
-		return result.flatMap {
-			action(it)
-			transactionContext.getConnection()
-					.rxCommit()
-					.andThen(transactionContext.getConnection().rxClose())
-					.andThen(Single.just(action(it)))
-		}
-	}
+        return result.flatMap {
+            action(it)
+            transactionContext.getConnection()
+                    .rxCommit()
+                    .andThen(transactionContext.getConnection().rxClose())
+                    .andThen(Single.just(action(it)))
+        }
+    }
 
-	override fun rollBackIf(action: (T) -> Boolean): Completable {
+    override fun rollBackIf(action: (T) -> Boolean): Completable {
 
-		return result.flatMapCompletable {
-			if (action(it)) {
-				transactionContext.getConnection()
-						.rxRollback().andThen(transactionContext.getConnection().rxClose())
+        return result.flatMapCompletable {
+            if (action(it)) {
+                transactionContext.getConnection()
+                        .rxRollback().andThen(transactionContext.getConnection().rxClose())
 
-			} else {
-				transactionContext.getConnection().rxCommit().andThen(
-						transactionContext.getConnection().rxClose())
-			}
-		}
-	}
+            } else {
+                transactionContext.getConnection().rxCommit().andThen(
+                        transactionContext.getConnection().rxClose())
+            }
+        }
+    }
 
-	override fun rollBackOnError(): Single<T> {
-		return result.onErrorResumeNext { t ->
-			transactionContext.getConnection()
-					.rxRollback()
-					.andThen(transactionContext.getConnection().rxClose())
-					.andThen(Single.error<T>(t))
-		}.flatMap {
-					transactionContext.getConnection()
-							.rxCommit()
-							.andThen(transactionContext.getConnection().rxClose())
-							.andThen(Single.just(it))
-				}
-	}
+    override fun rollBackOnError(): Single<T> {
+        return result.onErrorResumeNext { t ->
+            transactionContext.getConnection()
+                    .rxRollback()
+                    .andThen(transactionContext.getConnection().rxClose())
+                    .andThen(Single.error<T>(t))
+        }.flatMap {
+            transactionContext.getConnection()
+                    .rxCommit()
+                    .andThen(transactionContext.getConnection().rxClose())
+                    .andThen(Single.just(it))
+        }
+    }
 
-	override fun result(): Single<T> {
-		return result
-	}
+    override fun result(): Single<T> {
+        return result
+    }
 }

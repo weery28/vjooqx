@@ -4,7 +4,7 @@ interface MapperStepTransaction {
 
     fun <T> to(pClass: Class<T>): TransactionStep<T>
 
-    fun <T> toListOf(pClass: Class<T>):TransactionStep<List<T>>
+    fun <T> toListOf(pClass: Class<T>): TransactionStep<List<T>>
 
     fun <T> toTree(pClass: Class<T>, listAliases: List<String>): TransactionStep<T>
 

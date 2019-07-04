@@ -11,84 +11,84 @@ import org.jooq.conf.ParamType
 
 
 class TransactionContextImpl(
-		private val connectionProvider: Single<SQLConnection>,
-		private val jsonParser: JsonParser,
-		private val loggingInterceptor: LoggingInterceptor?,
-		private val dslContext: DSLContext
+        private val connectionProvider: Single<SQLConnection>,
+        private val jsonParser: JsonParser,
+        private val loggingInterceptor: LoggingInterceptor?,
+        private val dslContext: DSLContext
 ) : TransactionContext {
 
-	@Volatile
-	private var connection: SQLConnection? = null
+    @Volatile
+    private var connection: SQLConnection? = null
 
-	override fun getConnection(): SQLConnection {
-		return connection!!
-	}
+    override fun getConnection(): SQLConnection {
+        return connection!!
+    }
 
-	override fun getLoggingInterceptor(): LoggingInterceptor? {
-		return loggingInterceptor
-	}
+    override fun getLoggingInterceptor(): LoggingInterceptor? {
+        return loggingInterceptor
+    }
 
-	override fun getJsonParser(): JsonParser {
-		return jsonParser
-	}
+    override fun getJsonParser(): JsonParser {
+        return jsonParser
+    }
 
-	override fun fetch(query: (DSLContext) -> Query): MapperStepTransaction {
+    override fun fetch(query: (DSLContext) -> Query): MapperStepTransaction {
 
-		return MapperStepTransactionImpl(fetchWithConnection(query), this)
-	}
+        return MapperStepTransactionImpl(fetchWithConnection(query), this)
+    }
 
-	override fun execute(query: (DSLContext) -> Query): TransactionStep<Int> {
-		return TransactionStepImpl(executeWithConnection(query), this)
-	}
+    override fun execute(query: (DSLContext) -> Query): TransactionStep<Int> {
+        return TransactionStepImpl(executeWithConnection(query), this)
+    }
 
 
-	private fun fetchWithConnection(query: (DSLContext) -> Query): Single<ResultSet> {
+    private fun fetchWithConnection(query: (DSLContext) -> Query): Single<ResultSet> {
 
-		return if (connection != null) {
-			query(connection!!, query)
-		} else {
-			connectionProvider.flatMap { connection ->
-				this.connection = connection
-				connection.rxSetAutoCommit(false)
-						.toSingle { true }
-						.flatMap {
-							query(connection, query)
-						}
-			}
-		}
-	}
+        return if (connection != null) {
+            query(connection!!, query)
+        } else {
+            connectionProvider.flatMap { connection ->
+                this.connection = connection
+                connection.rxSetAutoCommit(false)
+                        .toSingle { true }
+                        .flatMap {
+                            query(connection, query)
+                        }
+            }
+        }
+    }
 
-	private fun executeWithConnection(query: (DSLContext) -> Query): Single<Int> {
+    private fun executeWithConnection(query: (DSLContext) -> Query): Single<Int> {
 
-		return if (connection != null) {
-			update(connection!!, query)
-		} else {
-			connectionProvider.flatMap { connection ->
-				this.connection = connection
-				connection.rxSetAutoCommit(false)
-						.toSingle { true }
-						.flatMap { update(connection, query) }
-			}
-		}
+        return if (connection != null) {
+            update(connection!!, query)
+        } else {
+            connectionProvider.flatMap { connection ->
+                this.connection = connection
+                connection.rxSetAutoCommit(false)
+                        .toSingle { true }
+                        .flatMap { update(connection, query) }
+            }
+        }
 
-	}
+    }
 
-	private fun update(connection: SQLConnection, query: (DSLContext) -> Query): Single<Int> {
-		return connection
-				.rxUpdate(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
-					loggingInterceptor?.log("Database <----- : " + this)
-				})
-				.map {
-					it.updated
-				}
-	}
+    private fun update(connection: SQLConnection, query: (DSLContext) -> Query): Single<Int> {
+        return connection
+                .rxUpdate(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
+                    loggingInterceptor?.log("Database <----- : " + this)
+                })
+                .map {
+                    it.updated
+                }
+    }
 
-	private fun query(connection: SQLConnection, query: (DSLContext) -> Query): Single<ResultSet> {
-		return connection.rxQuery(
-				query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
-					loggingInterceptor?.log("Database <----- : " + this)
-				}
-		)
-	}
+    private fun query(connection: SQLConnection, query: (DSLContext) -> Query): Single<ResultSet> {
+        return connection.rxQuery(
+                query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
+                    loggingInterceptor?.log("Database <----- : " + this)
+                }
+        )
+    }
 
 }

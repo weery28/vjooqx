@@ -4,9 +4,9 @@ import io.reactivex.Single
 
 
 class ExecutionImpl<E>(
-		val result : Single<E>
+        val result: Single<E>
 ) : Execution<E> {
-	override fun result(): Single<E> {
-		return result
-	}
+    override fun result(): Single<E> {
+        return result
+    }
 }
