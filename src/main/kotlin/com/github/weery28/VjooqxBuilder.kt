@@ -2,6 +2,7 @@ package com.github.weery28
 
 import com.github.weery28.json.JsonParserFactory
 import io.vertx.reactivex.ext.asyncsql.AsyncSQLClient
+import io.vertx.reactivex.ext.jdbc.JDBCClient
 import org.jooq.DSLContext
 
 
@@ -9,13 +10,13 @@ class VjooqxBuilder : Builder {
 
     private lateinit var dslContext: DSLContext
 
-    private lateinit var asyncSQLClient: AsyncSQLClient
+    private lateinit var asyncSQLClient: JDBCClient
 
     private lateinit var jsonParserFactory: JsonParserFactory
 
     private var loggingInterceptor: LoggingInterceptor? = null
 
-    override fun setupDelegate(delegate: AsyncSQLClient): VjooqxBuilder {
+    override fun setupDelegate(delegate: JDBCClient): VjooqxBuilder {
         asyncSQLClient = delegate
         return this
     }

@@ -5,13 +5,14 @@ import com.github.weery28.transactions.TransactionContext
 import com.github.weery28.transactions.TransactionContextImpl
 import io.reactivex.Single
 import io.vertx.reactivex.ext.asyncsql.AsyncSQLClient
+import io.vertx.reactivex.ext.jdbc.JDBCClient
 import io.vertx.reactivex.ext.sql.SQLConnection
 import org.jooq.DSLContext
 import org.jooq.Query
 import org.jooq.conf.ParamType
 
 class Vjooqx(
-        private val delegate: AsyncSQLClient,
+        private val delegate: JDBCClient,
         private val dslContext: DSLContext,
         private val jsonParser: JsonParser,
         private val loggingInterceptor: LoggingInterceptor?) {
