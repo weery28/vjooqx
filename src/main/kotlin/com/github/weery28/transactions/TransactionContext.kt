@@ -6,7 +6,6 @@ import io.vertx.reactivex.ext.sql.SQLConnection
 import org.jooq.DSLContext
 import org.jooq.Query
 
-
 interface TransactionContext {
 
     fun getConnection(): SQLConnection

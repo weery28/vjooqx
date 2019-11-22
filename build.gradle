@@ -1,5 +1,5 @@
 buildscript {
-    ext.vertx_version = '3.7.1'
+    ext.vertx_version = '3.8.3'
 
     repositories {
         maven { url 'http://dl.bintray.com/kotlin/kotlin-eap' }

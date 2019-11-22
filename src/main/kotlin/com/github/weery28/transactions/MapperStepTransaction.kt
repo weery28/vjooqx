@@ -10,7 +10,3 @@ interface MapperStepTransaction {
 
     fun <T> toTreeList(pClass: Class<T>, listAliases: List<String>): TransactionStep<List<T>>
 }
-
-
-
-

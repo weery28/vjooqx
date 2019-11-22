@@ -3,7 +3,6 @@ package com.github.weery28.transactions
 import io.reactivex.Completable
 import io.reactivex.Single
 
-
 interface TransactionStep<T> : Execution<T> {
 
     fun commit(): Single<T>

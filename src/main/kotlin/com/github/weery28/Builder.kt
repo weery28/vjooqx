@@ -1,7 +1,6 @@
 package com.github.weery28
 
 import com.github.weery28.json.JsonParserFactory
-import io.vertx.reactivex.ext.asyncsql.AsyncSQLClient
 import io.vertx.reactivex.ext.jdbc.JDBCClient
 import org.jooq.DSLContext
 

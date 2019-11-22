@@ -12,7 +12,3 @@ interface MapperStep {
 
     fun <T> toTreeList(pClass: Class<T>, listAliases: List<String>): Single<List<T>>
 }
-
-
-
-

@@ -3,18 +3,17 @@ package com.github.weery28.transactions
 import io.reactivex.Completable
 import io.reactivex.Single
 
-
 class TransactionStepImpl<T>(
-        private val result: Single<T>,
-        private val transactionContext: TransactionContext
+    private val result: Single<T>,
+    private val transactionContext: TransactionContext
 ) : TransactionStep<T> {
 
     override fun commit(): Single<T> {
 
         return transactionContext.getConnection().rxCommit()
-                .toSingle { true }
-                .flatMap { result }
-                .doAfterTerminate { transactionContext.getConnection().close() }
+            .toSingle { true }
+            .flatMap { result }
+            .doAfterTerminate { transactionContext.getConnection().close() }
     }
 
     override fun <E> then(action: (T, TransactionContext) -> Execution<E>): TransactionStep<E> {
@@ -24,15 +23,14 @@ class TransactionStepImpl<T>(
         }, transactionContext)
     }
 
-
     override fun thenCommit(action: (T) -> T): Single<T> {
 
         return result.flatMap {
             action(it)
             transactionContext.getConnection()
-                    .rxCommit()
-                    .andThen(transactionContext.getConnection().rxClose())
-                    .andThen(Single.just(action(it)))
+                .rxCommit()
+                .andThen(transactionContext.getConnection().rxClose())
+                .andThen(Single.just(action(it)))
         }
     }
 
@@ -41,11 +39,11 @@ class TransactionStepImpl<T>(
         return result.flatMapCompletable {
             if (action(it)) {
                 transactionContext.getConnection()
-                        .rxRollback().andThen(transactionContext.getConnection().rxClose())
-
+                    .rxRollback().andThen(transactionContext.getConnection().rxClose())
             } else {
                 transactionContext.getConnection().rxCommit().andThen(
-                        transactionContext.getConnection().rxClose())
+                    transactionContext.getConnection().rxClose()
+                )
             }
         }
     }
@@ -53,14 +51,14 @@ class TransactionStepImpl<T>(
     override fun rollBackOnError(): Single<T> {
         return result.onErrorResumeNext { t ->
             transactionContext.getConnection()
-                    .rxRollback()
-                    .andThen(transactionContext.getConnection().rxClose())
-                    .andThen(Single.error<T>(t))
+                .rxRollback()
+                .andThen(transactionContext.getConnection().rxClose())
+                .andThen(Single.error<T>(t))
         }.flatMap {
             transactionContext.getConnection()
-                    .rxCommit()
-                    .andThen(transactionContext.getConnection().rxClose())
-                    .andThen(Single.just(it))
+                .rxCommit()
+                .andThen(transactionContext.getConnection().rxClose())
+                .andThen(Single.just(it))
         }
     }
 

@@ -8,14 +8,14 @@ import io.vertx.core.json.JsonObject
 import io.vertx.ext.sql.ResultSet
 
 class MapperStepImpl(
-        private val jsonParser: JsonParser,
-        private val resultSingle: Single<ResultSet>,
-        private val loggingInterceptor: LoggingInterceptor?) : MapperStep {
+    private val jsonParser: JsonParser,
+    private val resultSingle: Single<ResultSet>,
+    private val loggingInterceptor: LoggingInterceptor?
+) : MapperStep {
 
     private val loggedResultSingle: Single<ResultSet> = resultSingle.doOnSuccess {
         loggingInterceptor?.log("Database -----> : " + it.toJson().encode())
     }
-
 
     override fun <T> to(pClass: Class<T>): Single<T> {
 
@@ -44,10 +44,11 @@ class MapperStepImpl(
 
             if (it.rows.size > 0) {
                 jsonParser.encode(
-                        folder(it.rows.map {
-                            makeListFields(unpackAlias(it), listAliases)
-                        }, listAliases).getJsonObject(0).encode(),
-                        pClass)
+                    folder(it.rows.map {
+                        makeListFields(unpackAlias(it), listAliases)
+                    }, listAliases).getJsonObject(0).encode(),
+                    pClass
+                )
             } else {
                 throw NullPointerException()
             }
@@ -75,7 +76,6 @@ class MapperStepImpl(
                     return@let JsonObject().put(topLevelKey, it)
                 })
                 unpackingResult.put(topLevelKey, node.getValue(topLevelKey))
-
             } else {
                 unpackingResult.put(topLevelKey, it.value)
             }
@@ -93,11 +93,11 @@ class MapperStepImpl(
                 val key = path.removeAt(0)
                 if (node.containsKey(key)) {
                     return node
-                            .put(key, getNode(path, value, node.getJsonObject(key)))
+                        .put(key, getNode(path, value, node.getJsonObject(key)))
                 } else {
                     return node
 
-                            .put(key, getNode(path, value, null))
+                        .put(key, getNode(path, value, null))
                 }
             }
         } else {
@@ -106,12 +106,13 @@ class MapperStepImpl(
             } else {
                 return node.put(path.first(), value)
             }
-
         }
     }
 
-    private fun makeListFields(jsonObject: JsonObject,
-                               listAliases: List<String>): JsonObject {
+    private fun makeListFields(
+        jsonObject: JsonObject,
+        listAliases: List<String>
+    ): JsonObject {
 
         val resultJsonObject = JsonObject()
         jsonObject.forEach {
@@ -119,9 +120,11 @@ class MapperStepImpl(
             if (listAliases.contains(it.key)) {
                 when (value) {
                     is JsonObject -> {
-                        resultJsonObject.put(it.key, JsonArray(
+                        resultJsonObject.put(
+                            it.key, JsonArray(
                                 listOf(makeListFields(value, listAliases))
-                        ))
+                            )
+                        )
                     }
                     is JsonArray -> {
                         resultJsonObject.put(it.key, JsonArray(listOf(makeListFields(value, listAliases))))
@@ -131,21 +134,25 @@ class MapperStepImpl(
                 }
             } else {
                 when (value) {
-                    is JsonObject -> resultJsonObject.put(it.key,
-                            makeListFields(value, listAliases)
+                    is JsonObject -> resultJsonObject.put(
+                        it.key,
+                        makeListFields(value, listAliases)
                     )
-                    is JsonArray -> resultJsonObject.put(it.key,
-                            makeListFields(value, listAliases))
+                    is JsonArray -> resultJsonObject.put(
+                        it.key,
+                        makeListFields(value, listAliases)
+                    )
                     else -> resultJsonObject.put(it.key, value)
                 }
             }
-
         }
         return resultJsonObject
     }
 
-    private fun makeListFields(jsonArray: JsonArray,
-                               listAliases: List<String>): JsonArray {
+    private fun makeListFields(
+        jsonArray: JsonArray,
+        listAliases: List<String>
+    ): JsonArray {
 
         val resultArray = JsonArray()
         jsonArray.forEach {
@@ -159,8 +166,9 @@ class MapperStepImpl(
     }
 
     private fun folder(
-            jsonObjects: List<JsonObject>,
-            listAliases: List<String>): JsonArray {
+        jsonObjects: List<JsonObject>,
+        listAliases: List<String>
+    ): JsonArray {
 
         val jsonResult = JsonArray()
         jsonObjects.forEachIndexed { index, jsonObject ->
@@ -180,9 +188,11 @@ class MapperStepImpl(
                         val tArray: JsonArray = stickyObject.getJsonArray(it).copy()
                         val tObject = jsonObject.getJsonArray(it).getValue(0) as JsonObject
                         tArray.add(tObject)
-                        stickyObject.put(it, folder(
+                        stickyObject.put(
+                            it, folder(
                                 tArray.map { it as JsonObject }, listAliases
-                        ))
+                            )
+                        )
                     }
                     jsonResult.add(stickyObject)
                 }
@@ -192,15 +202,17 @@ class MapperStepImpl(
     }
 
     private fun getStickyFields(
-            jsonObject: JsonObject,
-            listAliases: List<String>
+        jsonObject: JsonObject,
+        listAliases: List<String>
     ): List<String> {
         return jsonObject.filter { listAliases.contains(it.key) }.map { it.key }
     }
 
-    private fun isFolded(jsonObject1: JsonObject,
-                         jsonObject2: JsonObject,
-                         listAliases: List<String>): Boolean {
+    private fun isFolded(
+        jsonObject1: JsonObject,
+        jsonObject2: JsonObject,
+        listAliases: List<String>
+    ): Boolean {
         jsonObject1.forEach {
             val isListAlias = listAliases.contains(it.key)
             val isFieldEquals = with(jsonObject2.getValue(it.key)) {

@@ -9,12 +9,11 @@ import org.jooq.DSLContext
 import org.jooq.Query
 import org.jooq.conf.ParamType
 
-
 class TransactionContextImpl(
-        private val connectionProvider: Single<SQLConnection>,
-        private val jsonParser: JsonParser,
-        private val loggingInterceptor: LoggingInterceptor?,
-        private val dslContext: DSLContext
+    private val connectionProvider: Single<SQLConnection>,
+    private val jsonParser: JsonParser,
+    private val loggingInterceptor: LoggingInterceptor?,
+    private val dslContext: DSLContext
 ) : TransactionContext {
 
     @Volatile
@@ -41,7 +40,6 @@ class TransactionContextImpl(
         return TransactionStepImpl(executeWithConnection(query), this)
     }
 
-
     private fun fetchWithConnection(query: (DSLContext) -> Query): Single<ResultSet> {
 
         return if (connection != null) {
@@ -50,10 +48,10 @@ class TransactionContextImpl(
             connectionProvider.flatMap { connection ->
                 this.connection = connection
                 connection.rxSetAutoCommit(false)
-                        .toSingle { true }
-                        .flatMap {
-                            query(connection, query)
-                        }
+                    .toSingle { true }
+                    .flatMap {
+                        query(connection, query)
+                    }
             }
         }
     }
@@ -66,29 +64,27 @@ class TransactionContextImpl(
             connectionProvider.flatMap { connection ->
                 this.connection = connection
                 connection.rxSetAutoCommit(false)
-                        .toSingle { true }
-                        .flatMap { update(connection, query) }
+                    .toSingle { true }
+                    .flatMap { update(connection, query) }
             }
         }
-
     }
 
     private fun update(connection: SQLConnection, query: (DSLContext) -> Query): Single<Int> {
         return connection
-                .rxUpdate(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
-                    loggingInterceptor?.log("Database <----- : " + this)
-                })
-                .map {
-                    it.updated
-                }
+            .rxUpdate(query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
+                loggingInterceptor?.log("Database <----- : $this")
+            })
+            .map {
+                it.updated
+            }
     }
 
     private fun query(connection: SQLConnection, query: (DSLContext) -> Query): Single<ResultSet> {
         return connection.rxQuery(
-                query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
-                    loggingInterceptor?.log("Database <----- : " + this)
-                }
+            query(dslContext).getSQL(ParamType.NAMED_OR_INLINED).apply {
+                loggingInterceptor?.log("Database <----- : $this")
+            }
         )
     }
-
 }
